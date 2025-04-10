@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,14 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				betting: {
+					primary: '#0369a1', // Blue
+					secondary: '#16a34a', // Green
+					accent: '#f59e0b', // Amber
+					win: '#059669', // Emerald
+					loss: '#dc2626', // Red
+					neutral: '#64748b' // Slate
 				}
 			},
 			borderRadius: {
@@ -84,11 +93,29 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'pulse-slow': {
+					'0%, 100%': {
+						opacity: '1'
+					},
+					'50%': {
+						opacity: '0.8'
+					}
+				},
+				'coin-flip': {
+					'0%': {
+						transform: 'rotateY(0)'
+					},
+					'100%': {
+						transform: 'rotateY(180deg)'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'pulse-slow': 'pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+				'coin-flip': 'coin-flip 0.6s ease-in-out forwards'
 			}
 		}
 	},
