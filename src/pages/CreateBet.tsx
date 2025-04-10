@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import BetForm from '@/components/BetForm';
 import { useBetPal } from '@/contexts/BetPalContext';
 import { useNavigate } from 'react-router-dom';
-import { CircleBan } from 'lucide-react';
+import { Ban } from 'lucide-react';
 
 const CreateBet = () => {
   const { currentUser, isLoggedIn } = useBetPal();
@@ -79,7 +79,7 @@ const CreateBet = () => {
                 
                 <div className="mt-6 p-3 bg-red-50 border border-red-100 rounded-md">
                   <div className="flex items-center gap-2 text-red-600 mb-1">
-                    <CircleBan size={16} />
+                    <Ban size={16} />
                     <h3 className="font-semibold">Prohibited Bets</h3>
                   </div>
                   <p className="text-xs text-red-600">
