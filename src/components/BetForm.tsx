@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -23,6 +23,20 @@ import {
 } from '@/components/ui/select';
 import { useBetPal } from '@/contexts/BetPalContext';
 import { useNavigate } from 'react-router-dom';
+import { X, PlusCircle, User } from 'lucide-react';
+import { toast } from 'sonner';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 
 // Define the form schema
 const formSchema = z.object({
@@ -35,7 +49,6 @@ const formSchema = z.object({
     return date > now;
   }, { message: 'Deadline must be in the future' }),
   resolutionType: z.enum(['self', 'judge']),
-  opponent: z.string().optional(),
   judge: z.string().optional(),
 });
 
@@ -44,6 +57,19 @@ type FormValues = z.infer<typeof formSchema>;
 const BetForm: React.FC = () => {
   const { createBet, currentUser } = useBetPal();
   const navigate = useNavigate();
+  const [participants, setParticipants] = useState<string[]>([]);
+  const [participantInput, setParticipantInput] = useState('');
+  const [isParticipantPopoverOpen, setIsParticipantPopoverOpen] = useState(false);
+  const [isJudgePopoverOpen, setIsJudgePopoverOpen] = useState(false);
+  
+  // Mock user data for demonstration - in a real app, this would come from the context or an API
+  const mockUsers = [
+    { id: 'user1', username: 'user1' },
+    { id: 'user2', username: 'user2' },
+    { id: 'user3', username: 'user3' },
+    { id: 'john_doe', username: 'john_doe' },
+    { id: 'jane_smith', username: 'jane_smith' },
+  ];
   
   // Initialize form
   const form = useForm<FormValues>({
@@ -54,14 +80,48 @@ const BetForm: React.FC = () => {
       stake: 10,
       deadline: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, -8), // Tomorrow
       resolutionType: 'self',
-      opponent: '',
       judge: '',
     },
   });
+
+  const addParticipant = (username: string) => {
+    // Check if username exists
+    const userExists = mockUsers.some(user => user.username === username);
+    if (!userExists) {
+      toast.error(`User '${username}' not found`);
+      return;
+    }
+    
+    // Check if already added
+    if (participants.includes(username)) {
+      toast.error(`'${username}' is already added`);
+      return;
+    }
+    
+    // Add participant
+    setParticipants([...participants, username]);
+    setParticipantInput('');
+    toast.success(`Added ${username} to the bet`);
+    setIsParticipantPopoverOpen(false);
+  };
+
+  const removeParticipant = (username: string) => {
+    setParticipants(participants.filter(p => p !== username));
+  };
   
   // Submit handler
   const onSubmit = (values: FormValues) => {
     const deadlineDate = new Date(values.deadline);
+    
+    if (participants.length === 0) {
+      toast.error("You need to add at least one participant");
+      return;
+    }
+    
+    if (values.resolutionType === 'judge' && !values.judge) {
+      toast.error("You need to select a judge");
+      return;
+    }
     
     createBet({
       title: values.title,
@@ -112,6 +172,70 @@ const BetForm: React.FC = () => {
                 </FormItem>
               )}
             />
+            
+            <div>
+              <FormLabel>Participants</FormLabel>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {participants.map(participant => (
+                  <div 
+                    key={participant} 
+                    className="flex items-center bg-blue-100 text-blue-700 px-2 py-1 rounded-md"
+                  >
+                    <span className="mr-1">{participant}</span>
+                    <button 
+                      type="button" 
+                      onClick={() => removeParticipant(participant)}
+                      className="text-blue-500 hover:text-blue-700"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="flex gap-2 items-center">
+                <Popover open={isParticipantPopoverOpen} onOpenChange={setIsParticipantPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-9 flex items-center gap-1"
+                    >
+                      <PlusCircle size={16} />
+                      <span>Add Friends</span>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="p-0" side="bottom" align="start">
+                    <Command>
+                      <CommandInput 
+                        placeholder="Search username..." 
+                        value={participantInput}
+                        onValueChange={setParticipantInput}
+                      />
+                      <CommandEmpty>No user found</CommandEmpty>
+                      <CommandGroup>
+                        {mockUsers
+                          .filter(user => 
+                            user.username.toLowerCase().includes(participantInput.toLowerCase()) &&
+                            !participants.includes(user.username)
+                          )
+                          .map(user => (
+                            <CommandItem 
+                              key={user.id}
+                              onSelect={() => addParticipant(user.username)}
+                            >
+                              <User size={16} className="mr-2" />
+                              {user.username}
+                            </CommandItem>
+                          ))
+                        }
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
           </div>
           
           <div className="space-y-6">
@@ -185,7 +309,41 @@ const BetForm: React.FC = () => {
                   <FormItem>
                     <FormLabel>Judge (Username)</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter judge's username" {...field} />
+                      <Popover open={isJudgePopoverOpen} onOpenChange={setIsJudgePopoverOpen}>
+                        <PopoverTrigger asChild>
+                          <Button 
+                            type="button"
+                            variant="outline"
+                            role="combobox"
+                            className="w-full justify-between"
+                          >
+                            {field.value ? field.value : "Select a judge..."}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="p-0" side="bottom" align="start">
+                          <Command>
+                            <CommandInput placeholder="Search username..." />
+                            <CommandEmpty>No user found</CommandEmpty>
+                            <CommandGroup>
+                              {mockUsers
+                                .filter(user => !participants.includes(user.username))
+                                .map(user => (
+                                  <CommandItem 
+                                    key={user.id}
+                                    onSelect={() => {
+                                      field.onChange(user.username);
+                                      setIsJudgePopoverOpen(false);
+                                    }}
+                                  >
+                                    <User size={16} className="mr-2" />
+                                    {user.username}
+                                  </CommandItem>
+                                ))
+                              }
+                            </CommandGroup>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
