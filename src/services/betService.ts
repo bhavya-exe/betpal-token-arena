@@ -118,7 +118,7 @@ export const createBet = async (
     }
 
     // Add participants
-    const participantPromises = betData.participants.map(async (participantUsername) => {
+    const participantPromises = (betData.participants as string[]).map(async (participantUsername) => {
       const { data: participantData } = await supabase
         .from('profiles')
         .select('id')
@@ -349,17 +349,19 @@ export const resolveBet = async (
     const totalWinnings = bet.stake * totalParticipants;
     
     // Update winner's balance and stats
-    const { error: winnerError } = await supabase
-      .from('profiles')
-      .update({
-        token_balance: supabase.rpc('increment', { x: totalWinnings }),
-        total_wins: supabase.rpc('increment', { x: 1 })
-      })
-      .eq('id', winnerId);
+    await supabase.rpc('increment', {
+      table_name: 'profiles',
+      column_name: 'token_balance',
+      row_id: winnerId,
+      amount: totalWinnings
+    });
     
-    if (winnerError) {
-      console.error('Error updating winner stats:', winnerError);
-    }
+    await supabase.rpc('increment', {
+      table_name: 'profiles',
+      column_name: 'total_wins',
+      row_id: winnerId,
+      amount: 1
+    });
     
     // Update losers' stats
     const loserIds = participants
@@ -371,16 +373,12 @@ export const resolveBet = async (
     }
     
     for (const loserId of loserIds) {
-      const { error: loserError } = await supabase
-        .from('profiles')
-        .update({
-          total_losses: supabase.rpc('increment', { x: 1 })
-        })
-        .eq('id', loserId);
-        
-      if (loserError) {
-        console.error('Error updating loser stats:', loserError);
-      }
+      await supabase.rpc('increment', {
+        table_name: 'profiles',
+        column_name: 'total_losses',
+        row_id: loserId,
+        amount: 1
+      });
     }
     
     // Get winner's username for notifications

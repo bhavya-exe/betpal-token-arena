@@ -16,13 +16,13 @@ interface BetCardProps {
 const BetCard: React.FC<BetCardProps> = ({ bet, showActions = true }) => {
   const { joinBet, resolveBet, currentUser } = useBetPal();
   
-  const isCreator = currentUser?.id === bet.createdBy;
-  const isParticipant = currentUser ? bet.participants.includes(currentUser.id) : false;
-  const isJudge = currentUser?.id === bet.judge;
+  const isCreator = currentUser?.id === bet.created_by;
+  const isParticipant = currentUser ? bet.participants?.some(p => p.id === currentUser.id) : false;
+  const isJudge = currentUser?.id === bet.judge_id;
   const canJoin = currentUser && !isParticipant && bet.status === 'pending';
   const canResolve = currentUser && (
-    (bet.status === 'active' && bet.resolutionType === 'self' && isParticipant) ||
-    (bet.status === 'active' && bet.resolutionType === 'judge' && isJudge)
+    (bet.status === 'active' && bet.resolution_type === 'self' && isParticipant) ||
+    (bet.status === 'active' && bet.resolution_type === 'judge' && isJudge)
   );
   
   const getStatusColor = (status: string) => {
@@ -46,8 +46,10 @@ const BetCard: React.FC<BetCardProps> = ({ bet, showActions = true }) => {
     if (isJudge || isParticipant) {
       // In a real app, we'd show a dialog to select the winner
       // For demo, we'll just pick the first participant
-      const winnerId = bet.participants[0];
-      resolveBet(bet.id, winnerId);
+      const firstParticipant = bet.participants?.[0];
+      if (firstParticipant) {
+        resolveBet(bet.id, firstParticipant.id);
+      }
     }
   };
   
@@ -69,12 +71,12 @@ const BetCard: React.FC<BetCardProps> = ({ bet, showActions = true }) => {
   const renderResolutionBadge = () => (
     <div className="flex items-center ml-2">
       <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-200 capitalize">
-        {bet.resolutionType === 'judge' ? (
+        {bet.resolution_type === 'judge' ? (
           <Gavel size={12} className="mr-1" />
         ) : (
           <Users size={12} className="mr-1" />
         )}
-        {bet.resolutionType}
+        {bet.resolution_type}
       </Badge>
     </div>
   );
@@ -101,7 +103,7 @@ const BetCard: React.FC<BetCardProps> = ({ bet, showActions = true }) => {
           
           <div className="flex items-center text-sm text-gray-500">
             <Users size={16} className="mr-2" />
-            <span>{bet.participants.length} participant{bet.participants.length !== 1 ? 's' : ''}</span>
+            <span>{bet.participants?.length || 0} participant{(bet.participants?.length || 0) !== 1 ? 's' : ''}</span>
           </div>
           
           {bet.winner && (

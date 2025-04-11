@@ -62,9 +62,7 @@ export type Notification = {
   friendship_id?: string;
 };
 
-export type BetCreateData = Omit<Bet, 'id' | 'created_at' | 'status' | 'updated_at'> & { 
-  participants: string[] 
-};
+export type BetCreateData = Omit<Bet, 'id' | 'created_at' | 'status' | 'updated_at'>;
 
 export type Friend = {
   id: string;

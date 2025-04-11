@@ -1,38 +1,40 @@
 
 import React, { useEffect } from 'react';
 import Header from '@/components/Header';
-import { useBetPal } from '@/contexts/BetPalContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Link, useNavigate } from 'react-router-dom';
 import BetCard from '@/components/BetCard';
 import TokenDisplay from '@/components/TokenDisplay';
 import { Trophy, LayoutDashboard, HandCoins } from 'lucide-react';
+import { useBet } from '@/contexts/BetContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Index = () => {
-  const { currentUser, bets, isLoggedIn } = useBetPal();
+  const { bets, loadingBets } = useBet();
+  const { user, profile, isLoading } = useAuth();
   const navigate = useNavigate();
   
   // Redirect to login if not logged in
   useEffect(() => {
-    if (!isLoggedIn) {
+    if (!isLoading && !user) {
       navigate('/welcome');
     }
-  }, [isLoggedIn, navigate]);
+  }, [user, isLoading, navigate]);
   
-  if (!currentUser) {
+  if (isLoading || !user || !profile) {
     return null; // Will redirect to welcome
   }
   
   // Filter bets the user is participating in
   const userBets = bets.filter(bet => 
-    bet.participants.includes(currentUser.id) || bet.createdBy === currentUser.id
+    bet.participants?.some(p => p.id === user.id) || bet.created_by === user.id
   );
   
   const activeBets = userBets.filter(bet => bet.status === 'active');
   const pendingBets = userBets.filter(bet => bet.status === 'pending');
   const completedBets = userBets.filter(bet => bet.status === 'completed')
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 3); // Only show 3 most recent
   
   return (
@@ -42,7 +44,7 @@ const Index = () => {
       <main className="container px-4 py-8">
         <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Welcome, {currentUser.username}!</h1>
+            <h1 className="text-3xl font-bold">Welcome, {profile.username}!</h1>
             <p className="text-gray-500">Track your bets and manage your tokens</p>
           </div>
           

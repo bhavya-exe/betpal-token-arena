@@ -76,6 +76,7 @@ const BetForm: React.FC = () => {
         created_by: user.id,
         judge_id: values.resolutionType === 'judge' ? values.judge_id : null,
         participants: participants,
+        winner_id: null,
       });
       
       navigate('/bets');
