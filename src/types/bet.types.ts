@@ -3,6 +3,7 @@ export type BetStatus = 'pending' | 'active' | 'completed';
 export type ResolutionType = 'self' | 'judge';
 export type ParticipantStatus = 'invited' | 'accepted' | 'rejected';
 export type NotificationType = 'bet_invite' | 'bet_accepted' | 'bet_completed' | 'tokens_received' | 'friend_request' | 'friend_accepted' | 'bet_rejected';
+export type FriendStatus = 'pending' | 'accepted' | 'rejected';
 
 export type Bet = {
   id: string;
@@ -63,4 +64,26 @@ export type Notification = {
 
 export type BetCreateData = Omit<Bet, 'id' | 'created_at' | 'status' | 'updated_at'> & { 
   participants: string[] 
+};
+
+export type Friend = {
+  id: string;
+  user_id: string;
+  friend_id: string;
+  status: FriendStatus;
+  created_at: string;
+  updated_at: string;
+  profile?: {
+    id: string;
+    username: string;
+    email: string;
+    avatar_url: string | null;
+  };
+};
+
+export type FriendProfile = {
+  id: string;
+  username: string;
+  email: string;
+  avatar_url: string | null;
 };
