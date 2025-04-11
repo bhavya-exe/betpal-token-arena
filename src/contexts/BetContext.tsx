@@ -163,8 +163,8 @@ export function BetProvider({ children }: { children: ReactNode }) {
             .eq('bet_id', bet.id);
           
           // Safely handle potentially undefined or null judge/winner
-          const safeJudge = bet.judge || null;
-          const safeWinner = bet.winner || null;
+          const safeJudge = bet.judge && !('error' in bet.judge) ? bet.judge : null;
+          const safeWinner = bet.winner && !('error' in bet.winner) ? bet.winner : null;
 
           return {
             ...bet,
@@ -178,11 +178,11 @@ export function BetProvider({ children }: { children: ReactNode }) {
               avatar_url: p.profile?.avatar_url,
               status: p.status as ParticipantStatus
             })) || []
-          } as Bet;
+          };
         })
       );
 
-      setBets(betsWithParticipants);
+      setBets(betsWithParticipants as Bet[]);
     } catch (error) {
       console.error('Error fetching bets:', error);
     } finally {
@@ -287,12 +287,16 @@ export function BetProvider({ children }: { children: ReactNode }) {
       await Promise.all(participantPromises);
 
       // Update user's token balance (tokens are held in escrow)
-      await supabase
+      const { error: updateError } = await supabase
         .from('profiles')
         .update({
           token_balance: profile.token_balance - betData.stake
         })
         .eq('id', user.id);
+      
+      if (updateError) {
+        console.error('Error updating token balance:', updateError);
+      }
 
       // Refresh the user profile to update token balance
       await refreshProfile();
@@ -502,12 +506,16 @@ export function BetProvider({ children }: { children: ReactNode }) {
       }
       
       for (const loserId of loserIds) {
-        await supabase
+        const { error: loserError } = await supabase
           .from('profiles')
           .update({
             total_losses: supabase.rpc('increment', { x: 1 })
           })
           .eq('id', loserId);
+          
+        if (loserError) {
+          console.error('Error updating loser stats:', loserError);
+        }
       }
       
       // Get winner's username for notifications
@@ -614,8 +622,8 @@ export function BetProvider({ children }: { children: ReactNode }) {
         .eq('bet_id', betId);
       
       // Handle potentially null judge or winner
-      const safeJudge = data.judge || null;
-      const safeWinner = data.winner || null;
+      const safeJudge = data.judge && !('error' in data.judge) ? data.judge : null;
+      const safeWinner = data.winner && !('error' in data.winner) ? data.winner : null;
       
       const formattedBet: Bet = {
         ...data,
