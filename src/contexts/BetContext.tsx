@@ -35,11 +35,11 @@ export type Bet = {
   judge?: {
     username: string;
     avatar_url: string | null;
-  };
+  } | null;
   winner?: {
     username: string;
     avatar_url: string | null;
-  };
+  } | null;
 };
 
 export type BetParticipant = {
@@ -162,16 +162,22 @@ export function BetProvider({ children }: { children: ReactNode }) {
             .select('*, profile:profiles(id, username, avatar_url)')
             .eq('bet_id', bet.id);
           
+          // Safely handle potentially undefined or null judge/winner
+          const safeJudge = bet.judge || null;
+          const safeWinner = bet.winner || null;
+
           return {
             ...bet,
             status: bet.status as BetStatus,
             resolution_type: bet.resolution_type as ResolutionType,
+            judge: safeJudge,
+            winner: safeWinner,
             participants: participants?.map(p => ({
               id: p.profile?.id || '',
               username: p.profile?.username || '',
               avatar_url: p.profile?.avatar_url,
               status: p.status as ParticipantStatus
-            }))
+            })) || []
           } as Bet;
         })
       );
@@ -201,10 +207,12 @@ export function BetProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      setNotifications(data?.map(notification => ({
+      const typedNotifications: Notification[] = data?.map(notification => ({
         ...notification,
         type: notification.type as NotificationType
-      })) || []);
+      })) || [];
+
+      setNotifications(typedNotifications);
     } catch (error) {
       console.error('Error fetching notifications:', error);
     } finally {
@@ -247,11 +255,11 @@ export function BetProvider({ children }: { children: ReactNode }) {
       }
 
       // Add participants
-      const participantPromises = betData.participants.map(async (participant) => {
+      const participantPromises = betData.participants.map(async (participantUsername) => {
         const { data: participantData } = await supabase
           .from('profiles')
           .select('id')
-          .eq('username', participant)
+          .eq('username', participantUsername)
           .single();
 
         if (participantData) {
@@ -434,8 +442,13 @@ export function BetProvider({ children }: { children: ReactNode }) {
         .eq('bet_id', betId)
         .eq('status', 'accepted');
       
+      if (!participants) {
+        toast.error('No participants found for this bet');
+        return;
+      }
+      
       // Check authorization
-      const isParticipant = participants?.some(p => p.participant_id === user.id) || bet.created_by === user.id;
+      const isParticipant = participants.some(p => p.participant_id === user.id) || bet.created_by === user.id;
       const isJudge = bet.judge_id === user.id;
       
       if (bet.resolution_type === 'self' && !isParticipant) {
@@ -481,7 +494,7 @@ export function BetProvider({ children }: { children: ReactNode }) {
       
       // Update losers' stats
       const loserIds = participants
-        ?.map(p => p.participant_id)
+        .map(p => p.participant_id)
         .filter(id => id !== winnerId) || [];
       
       if (bet.created_by !== winnerId) {
@@ -600,16 +613,22 @@ export function BetProvider({ children }: { children: ReactNode }) {
         .select('*, profile:profiles(id, username, avatar_url)')
         .eq('bet_id', betId);
       
+      // Handle potentially null judge or winner
+      const safeJudge = data.judge || null;
+      const safeWinner = data.winner || null;
+      
       const formattedBet: Bet = {
         ...data,
         status: data.status as BetStatus,
         resolution_type: data.resolution_type as ResolutionType,
+        judge: safeJudge,
+        winner: safeWinner,
         participants: participants?.map(p => ({
           id: p.profile?.id || '',
           username: p.profile?.username || '',
           avatar_url: p.profile?.avatar_url,
           status: p.status as ParticipantStatus
-        }))
+        })) || []
       };
       
       return formattedBet;
