@@ -1,14 +1,15 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
 import { toast } from 'sonner';
 
+export type FriendStatus = 'pending' | 'accepted' | 'rejected';
+
 export type Friend = {
   id: string;
   user_id: string;
   friend_id: string;
-  status: 'pending' | 'accepted' | 'rejected';
+  status: FriendStatus;
   created_at: string;
   updated_at: string;
   profile?: {
@@ -111,11 +112,11 @@ export function FriendsProvider({ children }: { children: ReactNode }) {
       }
 
       setFriends([
-        ...(acceptedFriends || []), 
-        ...(acceptedFriends2 || [])
+        ...(acceptedFriends?.map(f => ({...f, status: f.status as FriendStatus})) || []), 
+        ...(acceptedFriends2?.map(f => ({...f, status: f.status as FriendStatus})) || [])
       ]);
-      setPendingRequests(pendingFriends || []);
-      setSentRequests(sentFriends || []);
+      setPendingRequests(pendingFriends?.map(f => ({...f, status: f.status as FriendStatus})) || []);
+      setSentRequests(sentFriends?.map(f => ({...f, status: f.status as FriendStatus})) || []);
     } catch (error) {
       console.error('Error fetching friends:', error);
     } finally {

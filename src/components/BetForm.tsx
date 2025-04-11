@@ -28,6 +28,14 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+// Define the participant type that matches what's expected by BetContext
+type Participant = {
+  id?: string;
+  username: string;
+  avatar_url?: string | null;
+  status?: 'invited' | 'accepted' | 'rejected';
+};
+
 const BetForm: React.FC = () => {
   const { createBet } = useBet();
   const { user, profile } = useAuth();

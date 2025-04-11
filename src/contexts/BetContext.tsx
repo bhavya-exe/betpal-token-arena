@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
@@ -5,6 +6,8 @@ import { toast } from 'sonner';
 
 export type BetStatus = 'pending' | 'active' | 'completed';
 export type ResolutionType = 'self' | 'judge';
+export type ParticipantStatus = 'invited' | 'accepted' | 'rejected';
+export type NotificationType = 'bet_invite' | 'bet_accepted' | 'bet_completed' | 'tokens_received' | 'friend_request' | 'friend_accepted' | 'bet_rejected';
 
 export type Bet = {
   id: string;
@@ -27,7 +30,7 @@ export type Bet = {
     id: string;
     username: string;
     avatar_url: string | null;
-    status?: 'invited' | 'accepted' | 'rejected';
+    status?: ParticipantStatus;
   }>;
   judge?: {
     username: string;
@@ -43,7 +46,7 @@ export type BetParticipant = {
   id: string;
   bet_id: string;
   participant_id: string;
-  status: 'invited' | 'accepted' | 'rejected';
+  status: ParticipantStatus;
   created_at: string;
   updated_at: string;
   profile?: {
@@ -58,7 +61,7 @@ export type Notification = {
   message: string;
   read: boolean;
   created_at: string;
-  type: 'bet_invite' | 'bet_accepted' | 'bet_completed' | 'tokens_received' | 'friend_request' | 'friend_accepted';
+  type: NotificationType;
   bet_id?: string;
   friendship_id?: string;
 };
@@ -145,7 +148,7 @@ export function BetProvider({ children }: { children: ReactNode }) {
 
       // Get unique bets by ID
       const combinedBets = [...createdBetsFormatted];
-      participatingBetsFormatted.forEach(bet => {
+      participatingBetsFormatted.forEach((bet: any) => {
         if (!combinedBets.some(b => b.id === bet.id)) {
           combinedBets.push(bet);
         }
@@ -161,13 +164,15 @@ export function BetProvider({ children }: { children: ReactNode }) {
           
           return {
             ...bet,
+            status: bet.status as BetStatus,
+            resolution_type: bet.resolution_type as ResolutionType,
             participants: participants?.map(p => ({
-              id: p.profile?.id,
-              username: p.profile?.username,
+              id: p.profile?.id || '',
+              username: p.profile?.username || '',
               avatar_url: p.profile?.avatar_url,
-              status: p.status
+              status: p.status as ParticipantStatus
             }))
-          };
+          } as Bet;
         })
       );
 
@@ -196,7 +201,10 @@ export function BetProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      setNotifications(data || []);
+      setNotifications(data?.map(notification => ({
+        ...notification,
+        type: notification.type as NotificationType
+      })) || []);
     } catch (error) {
       console.error('Error fetching notifications:', error);
     } finally {
@@ -360,12 +368,16 @@ export function BetProvider({ children }: { children: ReactNode }) {
       }
       
       // Update user's token balance (tokens are held in escrow)
-      await supabase
+      const { error: tokenError } = await supabase
         .from('profiles')
         .update({
           token_balance: profile.token_balance - bet.stake
         })
         .eq('id', user.id);
+      
+      if (tokenError) {
+        console.error('Error updating token balance:', tokenError);
+      }
       
       // Create notification for bet creator
       await supabase
@@ -588,15 +600,19 @@ export function BetProvider({ children }: { children: ReactNode }) {
         .select('*, profile:profiles(id, username, avatar_url)')
         .eq('bet_id', betId);
       
-      return {
+      const formattedBet: Bet = {
         ...data,
+        status: data.status as BetStatus,
+        resolution_type: data.resolution_type as ResolutionType,
         participants: participants?.map(p => ({
-          id: p.profile?.id,
-          username: p.profile?.username,
+          id: p.profile?.id || '',
+          username: p.profile?.username || '',
           avatar_url: p.profile?.avatar_url,
-          status: p.status
+          status: p.status as ParticipantStatus
         }))
       };
+      
+      return formattedBet;
     } catch (error) {
       console.error('Error fetching bet details:', error);
       return null;
