@@ -5,11 +5,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
-import { useBetPal } from '@/contexts/BetPalContext';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import ParticipantSelector from './bet-form/ParticipantSelector';
 import BetFormFields from './bet-form/BetFormFields';
+import { useBet } from '@/contexts/BetContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Define the form schema
 const formSchema = z.object({
@@ -22,13 +23,14 @@ const formSchema = z.object({
     return date > now;
   }, { message: 'Deadline must be in the future' }),
   resolutionType: z.enum(['self', 'judge']),
-  judge: z.string().optional(),
+  judge_id: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
 const BetForm: React.FC = () => {
-  const { createBet, currentUser } = useBetPal();
+  const { createBet } = useBet();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [participants, setParticipants] = useState<string[]>([]);
   
@@ -41,35 +43,45 @@ const BetForm: React.FC = () => {
       stake: 10,
       deadline: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, -8), // Tomorrow
       resolutionType: 'self',
-      judge: '',
+      judge_id: '',
     },
   });
   
   // Submit handler
-  const onSubmit = (values: FormValues) => {
-    const deadlineDate = new Date(values.deadline);
+  const onSubmit = async (values: FormValues) => {
+    if (!user || !profile) {
+      toast.error("You must be logged in to create a bet");
+      return;
+    }
+    
+    const deadlineDate = new Date(values.deadline).toISOString();
     
     if (participants.length === 0) {
       toast.error("You need to add at least one participant");
       return;
     }
     
-    if (values.resolutionType === 'judge' && !values.judge) {
+    if (values.resolutionType === 'judge' && !values.judge_id) {
       toast.error("You need to select a judge");
       return;
     }
     
-    createBet({
-      title: values.title,
-      description: values.description,
-      stake: values.stake,
-      deadline: deadlineDate,
-      resolutionType: values.resolutionType,
-      createdBy: currentUser?.id || '',
-      judge: values.resolutionType === 'judge' ? values.judge : undefined,
-    });
-    
-    navigate('/bets');
+    try {
+      await createBet({
+        title: values.title,
+        description: values.description,
+        stake: values.stake,
+        deadline: deadlineDate,
+        resolution_type: values.resolutionType,
+        created_by: user.id,
+        judge_id: values.resolutionType === 'judge' ? values.judge_id : null,
+        participants: participants,
+      });
+      
+      navigate('/bets');
+    } catch (error) {
+      console.error('Error creating bet:', error);
+    }
   };
   
   return (

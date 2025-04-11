@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -23,15 +23,7 @@ import {
 } from '@/components/ui/form';
 import { UseFormReturn } from 'react-hook-form';
 import { z } from 'zod';
-
-// Mock user data for demonstration - in a real app, this would come from the context or an API
-const mockUsers = [
-  { id: 'user1', username: 'user1' },
-  { id: 'user2', username: 'user2' },
-  { id: 'user3', username: 'user3' },
-  { id: 'john_doe', username: 'john_doe' },
-  { id: 'jane_smith', username: 'jane_smith' },
-];
+import { supabase } from '@/integrations/supabase/client';
 
 // Define the form schema used in the parent component
 const formSchema = z.object({
@@ -44,10 +36,15 @@ const formSchema = z.object({
     return date > now;
   }, { message: 'Deadline must be in the future' }),
   resolutionType: z.enum(['self', 'judge']),
-  judge: z.string().optional(),
+  judge_id: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
+
+type UserWithUsername = {
+  id: string;
+  username: string;
+};
 
 interface JudgeSelectorProps {
   form: UseFormReturn<FormValues>;
@@ -55,15 +52,81 @@ interface JudgeSelectorProps {
 }
 
 const JudgeSelector: React.FC<JudgeSelectorProps> = ({ form, participants }) => {
-  const [isJudgePopoverOpen, setIsJudgePopoverOpen] = React.useState(false);
+  const [isJudgePopoverOpen, setIsJudgePopoverOpen] = useState(false);
+  const [availableJudges, setAvailableJudges] = useState<UserWithUsername[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  // Fetch users for potential judges
+  useEffect(() => {
+    const fetchUsers = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, username')
+          .order('username');
+
+        if (error) {
+          console.error('Error fetching users:', error);
+          return;
+        }
+
+        setAvailableJudges(data || []);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (isJudgePopoverOpen) {
+      fetchUsers();
+    }
+  }, [isJudgePopoverOpen]);
+
+  // Filter judges based on search term and exclude participants
+  const filteredJudges = availableJudges.filter(user => 
+    !participants.includes(user.username) && 
+    user.username.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  
+  // Get selected judge username for display
+  const [selectedJudgeUsername, setSelectedJudgeUsername] = useState<string>('');
+  
+  useEffect(() => {
+    const getJudgeUsername = async () => {
+      const judgeId = form.watch('judge_id');
+      if (!judgeId) {
+        setSelectedJudgeUsername('');
+        return;
+      }
+      
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('id', judgeId)
+          .single();
+          
+        if (data) {
+          setSelectedJudgeUsername(data.username);
+        }
+      } catch (error) {
+        console.error('Error fetching judge username:', error);
+      }
+    };
+    
+    getJudgeUsername();
+  }, [form.watch('judge_id')]);
 
   return (
     <FormField
       control={form.control}
-      name="judge"
+      name="judge_id"
       render={({ field }) => (
         <FormItem>
-          <FormLabel>Judge (Username)</FormLabel>
+          <FormLabel>Judge</FormLabel>
           <FormControl>
             <Popover open={isJudgePopoverOpen} onOpenChange={setIsJudgePopoverOpen}>
               <PopoverTrigger asChild>
@@ -73,29 +136,31 @@ const JudgeSelector: React.FC<JudgeSelectorProps> = ({ form, participants }) => 
                   role="combobox"
                   className="w-full justify-between"
                 >
-                  {field.value ? field.value : "Select a judge..."}
+                  {selectedJudgeUsername ? selectedJudgeUsername : "Select a judge..."}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="p-0" side="bottom" align="start">
                 <Command>
-                  <CommandInput placeholder="Search username..." />
-                  <CommandEmpty>No user found</CommandEmpty>
+                  <CommandInput 
+                    placeholder="Search username..." 
+                    value={searchTerm}
+                    onValueChange={setSearchTerm}
+                  />
+                  <CommandEmpty>{loading ? 'Loading...' : 'No user found'}</CommandEmpty>
                   <CommandGroup>
-                    {mockUsers
-                      .filter(user => !participants.includes(user.username))
-                      .map(user => (
-                        <CommandItem 
-                          key={user.id}
-                          onSelect={() => {
-                            field.onChange(user.username);
-                            setIsJudgePopoverOpen(false);
-                          }}
-                        >
-                          <User size={16} className="mr-2" />
-                          {user.username}
-                        </CommandItem>
-                      ))
-                    }
+                    {filteredJudges.map(user => (
+                      <CommandItem 
+                        key={user.id}
+                        onSelect={() => {
+                          field.onChange(user.id);
+                          setSelectedJudgeUsername(user.username);
+                          setIsJudgePopoverOpen(false);
+                        }}
+                      >
+                        <User size={16} className="mr-2" />
+                        {user.username}
+                      </CommandItem>
+                    ))}
                   </CommandGroup>
                 </Command>
               </PopoverContent>

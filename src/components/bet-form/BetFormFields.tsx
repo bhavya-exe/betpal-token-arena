@@ -31,7 +31,7 @@ const formSchema = z.object({
     return date > now;
   }, { message: 'Deadline must be in the future' }),
   resolutionType: z.enum(['self', 'judge']),
-  judge: z.string().optional(),
+  judge_id: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, PlusCircle, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,15 +16,9 @@ import {
 } from '@/components/ui/popover';
 import { FormLabel } from '@/components/ui/form';
 import { toast } from 'sonner';
-
-// Mock user data for demonstration - in a real app, this would come from the context or an API
-const mockUsers = [
-  { id: 'user1', username: 'user1' },
-  { id: 'user2', username: 'user2' },
-  { id: 'user3', username: 'user3' },
-  { id: 'john_doe', username: 'john_doe' },
-  { id: 'jane_smith', username: 'jane_smith' },
-];
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useFriends } from '@/contexts/FriendsContext';
 
 interface ParticipantSelectorProps {
   participants: string[];
@@ -35,17 +29,60 @@ const ParticipantSelector: React.FC<ParticipantSelectorProps> = ({
   participants, 
   setParticipants 
 }) => {
+  const { user } = useAuth();
+  const { friends } = useFriends();
   const [participantInput, setParticipantInput] = useState('');
   const [isParticipantPopoverOpen, setIsParticipantPopoverOpen] = useState(false);
+  const [searchResults, setSearchResults] = useState<{ id: string, username: string }[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Load friends when popup opens
+  useEffect(() => {
+    if (isParticipantPopoverOpen) {
+      const friendUsernames = friends.map(friend => {
+        // Get the other user from the friendship
+        if (friend.user_id === user?.id) {
+          return { id: friend.friend_id, username: friend.profile?.username || '' };
+        } else {
+          return { id: friend.user_id, username: friend.profile?.username || '' };
+        }
+      }).filter(friend => friend.username && !participants.includes(friend.username));
+      
+      setSearchResults(friendUsernames as { id: string, username: string }[]);
+    }
+  }, [isParticipantPopoverOpen, friends, participants, user?.id]);
+
+  // Search for users
+  useEffect(() => {
+    if (!participantInput || participantInput.length < 2 || !isParticipantPopoverOpen) return;
+
+    const searchUsers = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, username')
+          .ilike('username', `%${participantInput}%`)
+          .order('username')
+          .limit(10);
+
+        if (error) {
+          console.error('Error searching users:', error);
+          return;
+        }
+
+        setSearchResults(data.filter(user => !participants.includes(user.username)) || []);
+      } catch (error) {
+        console.error('Error searching users:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    searchUsers();
+  }, [participantInput, isParticipantPopoverOpen, participants]);
 
   const addParticipant = (username: string) => {
-    // Check if username exists
-    const userExists = mockUsers.some(user => user.username === username);
-    if (!userExists) {
-      toast.error(`User '${username}' not found`);
-      return;
-    }
-    
     // Check if already added
     if (participants.includes(username)) {
       toast.error(`'${username}' is already added`);
@@ -104,23 +141,19 @@ const ParticipantSelector: React.FC<ParticipantSelectorProps> = ({
                 value={participantInput}
                 onValueChange={setParticipantInput}
               />
-              <CommandEmpty>No user found</CommandEmpty>
+              <CommandEmpty>
+                {loading ? 'Searching...' : 'No users found'}
+              </CommandEmpty>
               <CommandGroup>
-                {mockUsers
-                  .filter(user => 
-                    user.username.toLowerCase().includes(participantInput.toLowerCase()) &&
-                    !participants.includes(user.username)
-                  )
-                  .map(user => (
-                    <CommandItem 
-                      key={user.id}
-                      onSelect={() => addParticipant(user.username)}
-                    >
-                      <User size={16} className="mr-2" />
-                      {user.username}
-                    </CommandItem>
-                  ))
-                }
+                {searchResults.map(user => (
+                  <CommandItem 
+                    key={user.id}
+                    onSelect={() => addParticipant(user.username)}
+                  >
+                    <User size={16} className="mr-2" />
+                    {user.username}
+                  </CommandItem>
+                ))}
               </CommandGroup>
             </Command>
           </PopoverContent>
