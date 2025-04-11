@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Bet, BetCreateData, BetStatus, ParticipantStatus, ResolutionType } from "@/types/bet.types";
 import { toast } from "sonner";
@@ -117,8 +118,8 @@ export const createBet = async (
       return false;
     }
 
-    // Add participants
-    const participantPromises = (betData.participants as string[]).map(async (participantUsername) => {
+    // Add participants - betData.participants is a string[] of usernames
+    const participantPromises = betData.participants.map(async (participantUsername) => {
       const { data: participantData } = await supabase
         .from('profiles')
         .select('id')
@@ -366,7 +367,7 @@ export const resolveBet = async (
     // Update losers' stats
     const loserIds = participants
       .map(p => p.participant_id)
-      .filter(id => id !== winnerId) || [];
+      .filter(id => id !== winnerId);
     
     if (bet.created_by !== winnerId) {
       loserIds.push(bet.created_by);

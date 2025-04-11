@@ -75,7 +75,7 @@ const BetForm: React.FC = () => {
         resolution_type: values.resolutionType,
         created_by: user.id,
         judge_id: values.resolutionType === 'judge' ? values.judge_id : null,
-        participants: participants,
+        participants: participants, // Sending usernames as string[]
         winner_id: null,
       });
       

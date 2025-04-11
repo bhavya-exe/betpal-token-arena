@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import TokenDisplay from '@/components/TokenDisplay';
 import BetCard from '@/components/BetCard';
 import { User, Calendar, BarChart, Activity } from 'lucide-react';
+import { Bet } from '@/types/bet.types';
 
 const Profile = () => {
   const { currentUser, bets, isLoggedIn } = useBetPal();
@@ -27,15 +28,15 @@ const Profile = () => {
   
   // Filter user's bets
   const userBets = bets.filter(bet => 
-    bet.participants.includes(currentUser.id) || bet.createdBy === currentUser.id
+    bet.participants?.some(p => p.id === currentUser.id) || bet.created_by === currentUser.id
   );
   
-  const createdBets = bets.filter(bet => bet.createdBy === currentUser.id);
+  const createdBets = bets.filter(bet => bet.created_by === currentUser.id);
   const participatedBets = bets.filter(bet => 
-    bet.participants.includes(currentUser.id) && bet.createdBy !== currentUser.id
+    bet.participants?.some(p => p.id === currentUser.id) && bet.created_by !== currentUser.id
   );
   const wonBets = bets.filter(bet => 
-    bet.status === 'completed' && bet.winner === currentUser.id
+    bet.status === 'completed' && bet.winner_id === currentUser.id
   );
   
   // Calculate statistics
@@ -43,7 +44,11 @@ const Profile = () => {
   const winRate = currentUser.totalWins > 0 
     ? Math.round((currentUser.totalWins / (currentUser.totalWins + currentUser.totalLosses)) * 100) 
     : 0;
-  const tokensWon = wonBets.reduce((total, bet) => total + (bet.stake * bet.participants.length), 0);
+  const tokensWon = wonBets.reduce((total, bet) => {
+    // Count participants who accepted the bet
+    const participantCount = bet.participants?.filter(p => p.status === 'accepted').length || 0;
+    return total + (bet.stake * (participantCount + 1)); // +1 for creator
+  }, 0);
   
   return (
     <div className="min-h-screen bg-gray-50">
@@ -168,7 +173,7 @@ const Profile = () => {
                     {userBets.length > 0 ? (
                       <div className="space-y-4">
                         {userBets.map(bet => (
-                          <BetCard key={bet.id} bet={bet} showActions={false} />
+                          <BetCard key={bet.id} bet={bet as Bet} showActions={false} />
                         ))}
                       </div>
                     ) : (
@@ -182,7 +187,7 @@ const Profile = () => {
                     {createdBets.length > 0 ? (
                       <div className="space-y-4">
                         {createdBets.map(bet => (
-                          <BetCard key={bet.id} bet={bet} showActions={false} />
+                          <BetCard key={bet.id} bet={bet as Bet} showActions={false} />
                         ))}
                       </div>
                     ) : (
@@ -196,7 +201,7 @@ const Profile = () => {
                     {participatedBets.length > 0 ? (
                       <div className="space-y-4">
                         {participatedBets.map(bet => (
-                          <BetCard key={bet.id} bet={bet} showActions={false} />
+                          <BetCard key={bet.id} bet={bet as Bet} showActions={false} />
                         ))}
                       </div>
                     ) : (
@@ -210,7 +215,7 @@ const Profile = () => {
                     {wonBets.length > 0 ? (
                       <div className="space-y-4">
                         {wonBets.map(bet => (
-                          <BetCard key={bet.id} bet={bet} showActions={false} />
+                          <BetCard key={bet.id} bet={bet as Bet} showActions={false} />
                         ))}
                       </div>
                     ) : (

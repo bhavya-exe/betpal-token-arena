@@ -62,7 +62,10 @@ export type Notification = {
   friendship_id?: string;
 };
 
-export type BetCreateData = Omit<Bet, 'id' | 'created_at' | 'status' | 'updated_at'>;
+// Update the type to accept either string array (for usernames) or just string[] during creation
+export type BetCreateData = Omit<Bet, 'id' | 'created_at' | 'status' | 'updated_at'> & {
+  participants: string[];
+};
 
 export type Friend = {
   id: string;
