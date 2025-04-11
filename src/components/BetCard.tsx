@@ -4,7 +4,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Hourglass, Calendar, Trophy, Users, Gavel, LayoutDashboard } from 'lucide-react';
-import { Bet, useBetPal } from '@/contexts/BetPalContext';
+import { Bet } from '@/types/bet.types';
+import { useBetPal } from '@/contexts/BetPalContext';
 import { formatDistanceToNow } from 'date-fns';
 
 interface BetCardProps {
