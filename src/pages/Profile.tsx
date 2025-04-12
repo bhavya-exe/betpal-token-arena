@@ -27,16 +27,30 @@ const Profile = () => {
   }
   
   // Filter user's bets
-  const userBets = bets.filter(bet => 
-    bet.participants?.some(p => p.id === currentUser.id) || bet.created_by === currentUser.id
-  );
+  const userBets = bets.filter(bet => {
+    // Check if the user is a participant
+    const isParticipant = bet.participants?.some(p => {
+      // Make sure p is an object with an id property, not a string
+      return typeof p === 'object' && 'id' in p && p.id === currentUser.id;
+    });
+    // Check if the user is the creator
+    const isCreator = 'created_by' in bet && bet.created_by === currentUser.id;
+    return isParticipant || isCreator;
+  });
   
-  const createdBets = bets.filter(bet => bet.created_by === currentUser.id);
-  const participatedBets = bets.filter(bet => 
-    bet.participants?.some(p => p.id === currentUser.id) && bet.created_by !== currentUser.id
-  );
+  const createdBets = bets.filter(bet => 'created_by' in bet && bet.created_by === currentUser.id);
+  const participatedBets = bets.filter(bet => {
+    // Check if the user is a participant but not the creator
+    const isParticipant = bet.participants?.some(p => {
+      return typeof p === 'object' && 'id' in p && p.id === currentUser.id;
+    });
+    const isCreator = 'created_by' in bet && bet.created_by === currentUser.id;
+    return isParticipant && !isCreator;
+  });
+  
   const wonBets = bets.filter(bet => 
-    bet.status === 'completed' && bet.winner_id === currentUser.id
+    'status' in bet && bet.status === 'completed' && 
+    'winner_id' in bet && bet.winner_id === currentUser.id
   );
   
   // Calculate statistics
@@ -45,8 +59,13 @@ const Profile = () => {
     ? Math.round((currentUser.totalWins / (currentUser.totalWins + currentUser.totalLosses)) * 100) 
     : 0;
   const tokensWon = wonBets.reduce((total, bet) => {
+    if (!('stake' in bet) || !('participants' in bet)) return total;
+    
     // Count participants who accepted the bet
-    const participantCount = bet.participants?.filter(p => p.status === 'accepted').length || 0;
+    const participantCount = bet.participants?.filter(p => {
+      return typeof p === 'object' && 'status' in p && p.status === 'accepted';
+    }).length || 0;
+    
     return total + (bet.stake * (participantCount + 1)); // +1 for creator
   }, 0);
   
@@ -173,7 +192,7 @@ const Profile = () => {
                     {userBets.length > 0 ? (
                       <div className="space-y-4">
                         {userBets.map(bet => (
-                          <BetCard key={bet.id} bet={bet as Bet} showActions={false} />
+                          <BetCard key={bet.id} bet={bet as unknown as Bet} showActions={false} />
                         ))}
                       </div>
                     ) : (
@@ -187,7 +206,7 @@ const Profile = () => {
                     {createdBets.length > 0 ? (
                       <div className="space-y-4">
                         {createdBets.map(bet => (
-                          <BetCard key={bet.id} bet={bet as Bet} showActions={false} />
+                          <BetCard key={bet.id} bet={bet as unknown as Bet} showActions={false} />
                         ))}
                       </div>
                     ) : (
@@ -201,7 +220,7 @@ const Profile = () => {
                     {participatedBets.length > 0 ? (
                       <div className="space-y-4">
                         {participatedBets.map(bet => (
-                          <BetCard key={bet.id} bet={bet as Bet} showActions={false} />
+                          <BetCard key={bet.id} bet={bet as unknown as Bet} showActions={false} />
                         ))}
                       </div>
                     ) : (
@@ -215,7 +234,7 @@ const Profile = () => {
                     {wonBets.length > 0 ? (
                       <div className="space-y-4">
                         {wonBets.map(bet => (
-                          <BetCard key={bet.id} bet={bet as Bet} showActions={false} />
+                          <BetCard key={bet.id} bet={bet as unknown as Bet} showActions={false} />
                         ))}
                       </div>
                     ) : (

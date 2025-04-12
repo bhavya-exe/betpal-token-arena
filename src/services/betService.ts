@@ -120,6 +120,7 @@ export const createBet = async (
 
     // Add participants - betData.participants is a string[] of usernames
     const participantPromises = betData.participants.map(async (participantUsername) => {
+      // Convert username to id
       const { data: participantData } = await supabase
         .from('profiles')
         .select('id')

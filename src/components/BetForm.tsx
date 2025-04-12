@@ -11,6 +11,7 @@ import ParticipantSelector from './bet-form/ParticipantSelector';
 import BetFormFields from './bet-form/BetFormFields';
 import { useBet } from '@/contexts/BetContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { BetCreateData } from '@/types/bet.types';
 
 // Define the form schema
 const formSchema = z.object({
@@ -67,7 +68,8 @@ const BetForm: React.FC = () => {
     }
     
     try {
-      await createBet({
+      // Create bet data with correct types
+      const betData: BetCreateData = {
         title: values.title,
         description: values.description,
         stake: values.stake,
@@ -75,10 +77,11 @@ const BetForm: React.FC = () => {
         resolution_type: values.resolutionType,
         created_by: user.id,
         judge_id: values.resolutionType === 'judge' ? values.judge_id : null,
-        participants: participants, // Sending usernames as string[]
+        participants: participants, // String array of usernames
         winner_id: null,
-      });
+      };
       
+      await createBet(betData);
       navigate('/bets');
     } catch (error) {
       console.error('Error creating bet:', error);
