@@ -2,7 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-// Define a specific type for the RPC parameters
+// Define a specific interface for the RPC parameters
 interface IncrementParams {
   table_name: string;
   column_name: string;
@@ -81,30 +81,30 @@ export const resolveBet = async (
     const totalParticipants = (participants?.length || 0) + 1; // +1 for creator
     const totalWinnings = bet.stake * totalParticipants;
     
-    // Update winner's balance and stats
-    const { error: balanceError } = await supabase.rpc(
-      'increment', 
-      {
-        table_name: 'profiles',
-        column_name: 'token_balance',
-        row_id: winnerId,
-        amount: totalWinnings
-      } as IncrementParams
-    );
+    // Using explicit type for parameters without generic type parameters
+    const incrementParams: IncrementParams = {
+      table_name: 'profiles',
+      column_name: 'token_balance',
+      row_id: winnerId,
+      amount: totalWinnings
+    };
+    
+    // Update winner's balance
+    const { error: balanceError } = await supabase.rpc('increment', incrementParams);
     
     if (balanceError) {
       console.error('Error updating winner balance:', balanceError);
     }
     
-    const { error: winsError } = await supabase.rpc(
-      'increment',
-      {
-        table_name: 'profiles',
-        column_name: 'total_wins',
-        row_id: winnerId,
-        amount: 1
-      } as IncrementParams
-    );
+    // Update winner's stats
+    const winsParams: IncrementParams = {
+      table_name: 'profiles',
+      column_name: 'total_wins',
+      row_id: winnerId,
+      amount: 1
+    };
+    
+    const { error: winsError } = await supabase.rpc('increment', winsParams);
     
     if (winsError) {
       console.error('Error updating winner stats:', winsError);
@@ -120,15 +120,14 @@ export const resolveBet = async (
     }
     
     for (const loserId of loserIds) {
-      const { error: lossesError } = await supabase.rpc(
-        'increment',
-        {
-          table_name: 'profiles',
-          column_name: 'total_losses',
-          row_id: loserId,
-          amount: 1
-        } as IncrementParams
-      );
+      const lossesParams: IncrementParams = {
+        table_name: 'profiles',
+        column_name: 'total_losses',
+        row_id: loserId,
+        amount: 1
+      };
+      
+      const { error: lossesError } = await supabase.rpc('increment', lossesParams);
       
       if (lossesError) {
         console.error(`Error updating loser stats for ${loserId}:`, lossesError);
