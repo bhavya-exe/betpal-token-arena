@@ -24,15 +24,16 @@ const Profile = () => {
   }
   
   // Organize bets by type using our utility function
+  // Use type assertion to handle the type mismatch between context and bet.types
   const { userBets, createdBets, participatedBets, wonBets } = filterUserBets(
-    bets, 
+    bets as unknown as Bet[], 
     currentUser.id
   );
   
   // Calculate statistics
   const totalBetsCount = userBets.length;
   const winRate = calculateWinRate(currentUser.totalWins, currentUser.totalLosses);
-  const tokensWon = calculateTokensWon(wonBets);
+  const tokensWon = calculateTokensWon(wonBets as Bet[]);
   
   return (
     <div className="min-h-screen bg-gray-50">
