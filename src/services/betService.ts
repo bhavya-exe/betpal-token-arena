@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Bet, BetCreateData, BetStatus, ParticipantStatus, ResolutionType } from "@/types/bet.types";
 import { toast } from "sonner";
@@ -356,14 +355,14 @@ export const resolveBet = async (
       column_name: 'token_balance',
       row_id: winnerId,
       amount: totalWinnings
-    });
+    } as any);
     
     await supabase.rpc('increment', {
       table_name: 'profiles',
       column_name: 'total_wins',
       row_id: winnerId,
       amount: 1
-    });
+    } as any);
     
     // Update losers' stats
     const loserIds = participants
@@ -380,7 +379,7 @@ export const resolveBet = async (
         column_name: 'total_losses',
         row_id: loserId,
         amount: 1
-      });
+      } as any);
     }
     
     // Get winner's username for notifications
