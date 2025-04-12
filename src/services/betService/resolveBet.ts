@@ -82,23 +82,30 @@ export const resolveBet = async (
     const totalWinnings = bet.stake * totalParticipants;
     
     // Update winner's balance and stats
-    const { error: balanceError } = await supabase.rpc('increment', {
-      table_name: 'profiles',
-      column_name: 'token_balance',
-      row_id: winnerId,
-      amount: totalWinnings
-    } as IncrementParams);
+    // Using generic parameter for rpc to specify both input and output types
+    const { error: balanceError } = await supabase.rpc<boolean, IncrementParams>(
+      'increment', 
+      {
+        table_name: 'profiles',
+        column_name: 'token_balance',
+        row_id: winnerId,
+        amount: totalWinnings
+      }
+    );
     
     if (balanceError) {
       console.error('Error updating winner balance:', balanceError);
     }
     
-    const { error: winsError } = await supabase.rpc('increment', {
-      table_name: 'profiles',
-      column_name: 'total_wins',
-      row_id: winnerId,
-      amount: 1
-    } as IncrementParams);
+    const { error: winsError } = await supabase.rpc<boolean, IncrementParams>(
+      'increment',
+      {
+        table_name: 'profiles',
+        column_name: 'total_wins',
+        row_id: winnerId,
+        amount: 1
+      }
+    );
     
     if (winsError) {
       console.error('Error updating winner stats:', winsError);
@@ -114,12 +121,15 @@ export const resolveBet = async (
     }
     
     for (const loserId of loserIds) {
-      const { error: lossesError } = await supabase.rpc('increment', {
-        table_name: 'profiles',
-        column_name: 'total_losses',
-        row_id: loserId,
-        amount: 1
-      } as IncrementParams);
+      const { error: lossesError } = await supabase.rpc<boolean, IncrementParams>(
+        'increment',
+        {
+          table_name: 'profiles',
+          column_name: 'total_losses',
+          row_id: loserId,
+          amount: 1
+        }
+      );
       
       if (lossesError) {
         console.error(`Error updating loser stats for ${loserId}:`, lossesError);
