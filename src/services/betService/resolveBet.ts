@@ -89,7 +89,7 @@ export const resolveBet = async (
         column_name: 'token_balance',
         row_id: winnerId,
         amount: totalWinnings
-      }
+      } as IncrementParams
     );
     
     if (balanceError) {
@@ -103,7 +103,7 @@ export const resolveBet = async (
         column_name: 'total_wins',
         row_id: winnerId,
         amount: 1
-      }
+      } as IncrementParams
     );
     
     if (winsError) {
@@ -127,7 +127,7 @@ export const resolveBet = async (
           column_name: 'total_losses',
           row_id: loserId,
           amount: 1
-        }
+        } as IncrementParams
       );
       
       if (lossesError) {
