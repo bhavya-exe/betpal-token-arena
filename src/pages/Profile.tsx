@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Header from '@/components/Header';
 import { useBetPal } from '@/contexts/BetPalContext';
@@ -31,7 +30,7 @@ const Profile = () => {
     // Check if the user is a participant
     const isParticipant = bet.participants?.some(p => {
       // Make sure p is an object with an id property, not a string
-      return typeof p === 'object' && p !== null && 'id' in p && p.id === currentUser.id;
+      return p && typeof p === 'object' && p !== null && 'id' in p && p.id === currentUser.id;
     });
     // Check if the user is the creator
     const isCreator = 'created_by' in bet && bet.created_by === currentUser.id;
@@ -42,7 +41,7 @@ const Profile = () => {
   const participatedBets = bets.filter(bet => {
     // Check if the user is a participant but not the creator
     const isParticipant = bet.participants?.some(p => {
-      return typeof p === 'object' && p !== null && 'id' in p && p.id === currentUser.id;
+      return p && typeof p === 'object' && p !== null && 'id' in p && p.id === currentUser.id;
     });
     const isCreator = 'created_by' in bet && bet.created_by === currentUser.id;
     return isParticipant && !isCreator;
@@ -63,7 +62,7 @@ const Profile = () => {
     
     // Count participants who accepted the bet
     const participantCount = bet.participants?.filter(p => {
-      return typeof p === 'object' && p !== null && 'status' in p && p.status === 'accepted';
+      return p && typeof p === 'object' && p !== null && 'status' in p && p.status === 'accepted';
     }).length || 0;
     
     return total + (bet.stake * (participantCount + 1)); // +1 for creator
