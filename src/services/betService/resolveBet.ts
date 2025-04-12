@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -86,19 +87,19 @@ export const resolveBet = async (
     const totalWinnings = bet.stake * totalParticipants;
     
     // Update winner's balance and stats
-    await supabase.rpc<RPCResponse, IncrementParams>('increment', {
+    await supabase.rpc<RPCResponse>('increment', {
       table_name: 'profiles',
       column_name: 'token_balance',
       row_id: winnerId,
       amount: totalWinnings
-    });
+    } as IncrementParams);
     
-    await supabase.rpc<RPCResponse, IncrementParams>('increment', {
+    await supabase.rpc<RPCResponse>('increment', {
       table_name: 'profiles',
       column_name: 'total_wins',
       row_id: winnerId,
       amount: 1
-    });
+    } as IncrementParams);
     
     // Update losers' stats
     const loserIds = participants
@@ -110,12 +111,12 @@ export const resolveBet = async (
     }
     
     for (const loserId of loserIds) {
-      await supabase.rpc<RPCResponse, IncrementParams>('increment', {
+      await supabase.rpc<RPCResponse>('increment', {
         table_name: 'profiles',
         column_name: 'total_losses',
         row_id: loserId,
         amount: 1
-      });
+      } as IncrementParams);
     }
     
     // Get winner's username for notifications
