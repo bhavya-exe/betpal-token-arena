@@ -82,8 +82,7 @@ export const resolveBet = async (
     const totalWinnings = bet.stake * totalParticipants;
     
     // Update winner's balance and stats
-    // Using generic parameter for rpc to specify both input and output types
-    const { error: balanceError } = await supabase.rpc<boolean, IncrementParams>(
+    const { error: balanceError } = await supabase.rpc(
       'increment', 
       {
         table_name: 'profiles',
@@ -97,7 +96,7 @@ export const resolveBet = async (
       console.error('Error updating winner balance:', balanceError);
     }
     
-    const { error: winsError } = await supabase.rpc<boolean, IncrementParams>(
+    const { error: winsError } = await supabase.rpc(
       'increment',
       {
         table_name: 'profiles',
@@ -121,7 +120,7 @@ export const resolveBet = async (
     }
     
     for (const loserId of loserIds) {
-      const { error: lossesError } = await supabase.rpc<boolean, IncrementParams>(
+      const { error: lossesError } = await supabase.rpc(
         'increment',
         {
           table_name: 'profiles',
