@@ -2,16 +2,13 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-// Define a specific type for the RPC parameters to avoid type errors
+// Define a specific type for the RPC parameters
 interface IncrementParams {
   table_name: string;
   column_name: string;
   row_id: string;
   amount: number;
 }
-
-// Define the return type for the RPC call
-type RPCResponse = boolean;
 
 export const resolveBet = async (
   betId: string, 
@@ -85,19 +82,27 @@ export const resolveBet = async (
     const totalWinnings = bet.stake * totalParticipants;
     
     // Update winner's balance and stats
-    await supabase.rpc('increment', {
+    const { error: balanceError } = await supabase.rpc('increment', {
       table_name: 'profiles',
       column_name: 'token_balance',
       row_id: winnerId,
       amount: totalWinnings
-    });
+    } as IncrementParams);
     
-    await supabase.rpc('increment', {
+    if (balanceError) {
+      console.error('Error updating winner balance:', balanceError);
+    }
+    
+    const { error: winsError } = await supabase.rpc('increment', {
       table_name: 'profiles',
       column_name: 'total_wins',
       row_id: winnerId,
       amount: 1
-    });
+    } as IncrementParams);
+    
+    if (winsError) {
+      console.error('Error updating winner stats:', winsError);
+    }
     
     // Update losers' stats
     const loserIds = participants
@@ -109,12 +114,16 @@ export const resolveBet = async (
     }
     
     for (const loserId of loserIds) {
-      await supabase.rpc('increment', {
+      const { error: lossesError } = await supabase.rpc('increment', {
         table_name: 'profiles',
         column_name: 'total_losses',
         row_id: loserId,
         amount: 1
-      });
+      } as IncrementParams);
+      
+      if (lossesError) {
+        console.error(`Error updating loser stats for ${loserId}:`, lossesError);
+      }
     }
     
     // Get winner's username for notifications
