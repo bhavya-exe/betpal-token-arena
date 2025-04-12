@@ -11,9 +11,7 @@ interface IncrementParams {
 }
 
 // Define the return type for the RPC call
-interface RPCResponse {
-  success: boolean;
-}
+type RPCResponse = boolean;
 
 export const resolveBet = async (
   betId: string, 
@@ -87,14 +85,14 @@ export const resolveBet = async (
     const totalWinnings = bet.stake * totalParticipants;
     
     // Update winner's balance and stats
-    await supabase.rpc<RPCResponse, IncrementParams>('increment', {
+    await supabase.rpc('increment', {
       table_name: 'profiles',
       column_name: 'token_balance',
       row_id: winnerId,
       amount: totalWinnings
     });
     
-    await supabase.rpc<RPCResponse, IncrementParams>('increment', {
+    await supabase.rpc('increment', {
       table_name: 'profiles',
       column_name: 'total_wins',
       row_id: winnerId,
@@ -111,7 +109,7 @@ export const resolveBet = async (
     }
     
     for (const loserId of loserIds) {
-      await supabase.rpc<RPCResponse, IncrementParams>('increment', {
+      await supabase.rpc('increment', {
         table_name: 'profiles',
         column_name: 'total_losses',
         row_id: loserId,
