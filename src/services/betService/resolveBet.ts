@@ -2,6 +2,14 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+// Define a specific type for the RPC parameters to avoid type errors
+interface IncrementParams {
+  table_name: string;
+  column_name: string;
+  row_id: string;
+  amount: number;
+}
+
 export const resolveBet = async (
   betId: string, 
   winnerId: string,
@@ -74,19 +82,19 @@ export const resolveBet = async (
     const totalWinnings = bet.stake * totalParticipants;
     
     // Update winner's balance and stats
-    await supabase.rpc('increment', {
+    await supabase.rpc<any>('increment', {
       table_name: 'profiles',
       column_name: 'token_balance',
       row_id: winnerId,
       amount: totalWinnings
-    } as any); // Using type assertion to bypass type checking for RPC
+    } as IncrementParams);
     
-    await supabase.rpc('increment', {
+    await supabase.rpc<any>('increment', {
       table_name: 'profiles',
       column_name: 'total_wins',
       row_id: winnerId,
       amount: 1
-    } as any); // Using type assertion to bypass type checking for RPC
+    } as IncrementParams);
     
     // Update losers' stats
     const loserIds = participants
@@ -98,12 +106,12 @@ export const resolveBet = async (
     }
     
     for (const loserId of loserIds) {
-      await supabase.rpc('increment', {
+      await supabase.rpc<any>('increment', {
         table_name: 'profiles',
         column_name: 'total_losses',
         row_id: loserId,
         amount: 1
-      } as any); // Using type assertion to bypass type checking for RPC
+      } as IncrementParams);
     }
     
     // Get winner's username for notifications
