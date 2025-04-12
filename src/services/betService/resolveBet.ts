@@ -79,14 +79,14 @@ export const resolveBet = async (
       column_name: 'token_balance',
       row_id: winnerId,
       amount: totalWinnings
-    } as any);
+    } as any); // Using type assertion to bypass type checking for RPC
     
     await supabase.rpc('increment', {
       table_name: 'profiles',
       column_name: 'total_wins',
       row_id: winnerId,
       amount: 1
-    } as any);
+    } as any); // Using type assertion to bypass type checking for RPC
     
     // Update losers' stats
     const loserIds = participants
@@ -103,7 +103,7 @@ export const resolveBet = async (
         column_name: 'total_losses',
         row_id: loserId,
         amount: 1
-      } as any);
+      } as any); // Using type assertion to bypass type checking for RPC
     }
     
     // Get winner's username for notifications
