@@ -73,28 +73,25 @@ export const resolveBet = async (
     const totalParticipants = (participants?.length || 0) + 1; // +1 for creator
     const totalWinnings = bet.stake * totalParticipants;
     
-    // Update winner's balance - simplified without type parameters
-    const { error: balanceError } = await supabase.rpc('increment', {
-      table_name: 'profiles',
-      column_name: 'token_balance',
-      row_id: winnerId,
-      amount: totalWinnings
-    });
+    // Direct update winner's balance and stats
+    const { data: winnerProfile } = await supabase
+      .from('profiles')
+      .select('token_balance, total_wins')
+      .eq('id', winnerId)
+      .single();
     
-    if (balanceError) {
-      console.error('Error updating winner balance:', balanceError);
-    }
-    
-    // Update winner's stats - simplified without type parameters
-    const { error: winsError } = await supabase.rpc('increment', {
-      table_name: 'profiles',
-      column_name: 'total_wins',
-      row_id: winnerId,
-      amount: 1
-    });
-    
-    if (winsError) {
-      console.error('Error updating winner stats:', winsError);
+    if (winnerProfile) {
+      const { error: updateWinnerError } = await supabase
+        .from('profiles')
+        .update({
+          token_balance: winnerProfile.token_balance + totalWinnings,
+          total_wins: winnerProfile.total_wins + 1
+        })
+        .eq('id', winnerId);
+      
+      if (updateWinnerError) {
+        console.error('Error updating winner stats:', updateWinnerError);
+      }
     }
     
     // Update losers' stats
@@ -106,25 +103,23 @@ export const resolveBet = async (
       loserIds.push(bet.created_by);
     }
     
+    // Update each loser individually (more reliable than bulk update)
     for (const loserId of loserIds) {
-      const { error: lossesError } = await supabase.rpc('increment', {
-        table_name: 'profiles',
-        column_name: 'total_losses',
-        row_id: loserId,
-        amount: 1
-      });
+      const { data: loserProfile } = await supabase
+        .from('profiles')
+        .select('total_losses')
+        .eq('id', loserId)
+        .single();
       
-      if (lossesError) {
-        console.error(`Error updating loser stats for ${loserId}:`, lossesError);
+      if (loserProfile) {
+        await supabase
+          .from('profiles')
+          .update({
+            total_losses: loserProfile.total_losses + 1
+          })
+          .eq('id', loserId);
       }
     }
-    
-    // Get winner's username for notifications
-    const { data: winnerProfile } = await supabase
-      .from('profiles')
-      .select('username')
-      .eq('id', winnerId)
-      .single();
     
     // Create notifications for all participants
     const allParticipantIds = [...new Set([...loserIds, winnerId])];
