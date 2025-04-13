@@ -17,6 +17,8 @@ import CreateBet from "./pages/CreateBet";
 import Profile from "./pages/Profile";
 import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
+import Signup from "./pages/Signup";
+import Login from "./pages/Login";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +35,8 @@ const App = () => (
                 <Route path="/" element={<Index />} />
                 <Route path="/welcome" element={<Welcome />} />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route path="/login" element={<Login />} />
                 <Route path="/bets" element={<Bets />} />
                 <Route path="/create-bet" element={<CreateBet />} />
                 <Route path="/profile" element={<Profile />} />

@@ -15,7 +15,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Link, useNavigate } from 'react-router-dom';
-import { useBetPal } from '@/contexts/BetPalContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 
 // Form schema
@@ -33,7 +33,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 const Signup = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const { signup } = useBetPal();
+  const { signUp } = useAuth();
   const navigate = useNavigate();
   
   // Initialize form
@@ -52,7 +52,7 @@ const Signup = () => {
     setIsLoading(true);
     
     try {
-      await signup(values.username, values.email, values.password);
+      await signUp(values.email, values.password, values.username);
       navigate('/');
     } catch (error) {
       console.error(error);
