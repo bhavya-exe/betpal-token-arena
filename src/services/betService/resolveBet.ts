@@ -76,7 +76,7 @@ export const resolveBet = async (
     // Direct update winner's balance and stats
     const { data: winnerProfile } = await supabase
       .from('profiles')
-      .select('token_balance, total_wins')
+      .select('token_balance, total_wins, username')
       .eq('id', winnerId)
       .single();
     
